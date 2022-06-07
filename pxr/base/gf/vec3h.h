@@ -208,9 +208,9 @@ public:
 
     /// Multiplication by scalar.
     GfVec3h &operator*=(double s) {
-        _data[0] *= s;
-        _data[1] *= s;
-        _data[2] *= s;
+        _data[0] = float(_data[0] * s);
+        _data[1] = float(_data[1] * s);
+        _data[2] = float(_data[2] * s);
         return *this;
     }
     GfVec3h operator*(double s) const {
@@ -273,7 +273,7 @@ public:
     /// \todo This was fixed for bug 67777. This is a gcc64 optimizer bug.
     /// By tickling the code, it no longer tries to write into
     /// an illegal memory address (in the code section of memory).
-    GfHalf Normalize(GfHalf eps = 0.001) {
+    GfHalf Normalize(GfHalf eps = 0.001f) {
         // TODO this seems suspect...  suggest dividing by length so long as
         // length is not zero.
         GfHalf length = GetLength();
@@ -281,7 +281,7 @@ public:
         return length;
     }
 
-    GfVec3h GetNormalized(GfHalf eps = 0.001) const {
+    GfVec3h GetNormalized(GfHalf eps = 0.001f) const {
         GfVec3h normalized(*this);
         normalized.Normalize(eps);
         return normalized;
@@ -308,7 +308,7 @@ public:
     /// delivers a continuous result as *this shrinks in length.
     GF_API
     void BuildOrthonormalFrame(GfVec3h *v1, GfVec3h *v2,
-                    GfHalf eps = 0.001) const;
+                    GfHalf eps = 0.001f) const;
 
   
 private:
@@ -331,9 +331,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 inline
 GfVec3h::GfVec3h(class GfVec3d const &other)
 {
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
+    _data[0] = float(other[0]);
+    _data[1] = float(other[1]);
+    _data[2] = float(other[2]);
 }
 inline
 GfVec3h::GfVec3h(class GfVec3f const &other)
@@ -345,9 +345,9 @@ GfVec3h::GfVec3h(class GfVec3f const &other)
 inline
 GfVec3h::GfVec3h(class GfVec3i const &other)
 {
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
+    _data[0] = float(other[0]);
+    _data[1] = float(other[1]);
+    _data[2] = float(other[2]);
 }
 
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.
@@ -388,7 +388,7 @@ GfGetLength(GfVec3h const &v)
 /// normalization. If the length of \c *v is smaller than \p eps then \c *v is
 /// set to \c *v/eps.  The original length of \c *v is returned.
 inline GfHalf
-GfNormalize(GfVec3h *v, GfHalf eps = 0.001)
+GfNormalize(GfVec3h *v, GfHalf eps = 0.001f)
 {
     return v->Normalize(eps);
 }
@@ -397,7 +397,7 @@ GfNormalize(GfVec3h *v, GfHalf eps = 0.001)
 /// If the length of this vector is smaller than \p eps, the vector divided by
 /// \p eps is returned.
 inline GfVec3h
-GfGetNormalized(GfVec3h const &v, GfHalf eps = 0.001)
+GfGetNormalized(GfVec3h const &v, GfHalf eps = 0.001f)
 {
     return v.GetNormalized(eps);
 }
@@ -440,7 +440,7 @@ GF_API void
 GfBuildOrthonormalFrame(GfVec3h const &v0,
                         GfVec3h* v1,
                         GfVec3h* v2,
-                        GfHalf eps = 0.001);
+                        GfHalf eps = 0.001f);
 
 /// Returns the cross product of \p v1 and \p v2.
 inline GfVec3h

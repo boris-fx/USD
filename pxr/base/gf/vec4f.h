@@ -218,10 +218,10 @@ public:
 
     /// Multiplication by scalar.
     GfVec4f &operator*=(double s) {
-        _data[0] *= s;
-        _data[1] *= s;
-        _data[2] *= s;
-        _data[3] *= s;
+        _data[0] = float(_data[0] * s);
+        _data[1] = float(_data[1] * s);
+        _data[2] = float(_data[2] * s);
+        _data[3] = float(_data[3] * s);
         return *this;
     }
     GfVec4f operator*(double s) const {
@@ -319,10 +319,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 inline
 GfVec4f::GfVec4f(class GfVec4d const &other)
 {
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-    _data[3] = other[3];
+    _data[0] = float(other[0]);
+    _data[1] = float(other[1]);
+    _data[2] = float(other[2]);
+    _data[3] = float(other[3]);
 }
 inline
 GfVec4f::GfVec4f(class GfVec4h const &other)
@@ -335,10 +335,10 @@ GfVec4f::GfVec4f(class GfVec4h const &other)
 inline
 GfVec4f::GfVec4f(class GfVec4i const &other)
 {
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-    _data[3] = other[3];
+    _data[0] = float(other[0]);
+    _data[1] = float(other[1]);
+    _data[2] = float(other[2]);
+    _data[3] = float(other[3]);
 }
 
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.

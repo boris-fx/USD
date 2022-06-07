@@ -124,7 +124,7 @@ class GfQuath
     /// length of this quaternion is smaller than \p eps, return the identity
     /// quaternion.
     GfQuath
-    GetNormalized(GfHalf eps = GF_MIN_VECTOR_LENGTH) const {
+    GetNormalized(GfHalf eps = float(GF_MIN_VECTOR_LENGTH)) const {
         GfQuath ret(*this);
         ret.Normalize(eps);
         return ret;
@@ -134,7 +134,7 @@ class GfQuath
     /// length before normalization. If the length of this quaternion is
     /// smaller than \p eps, this sets the quaternion to identity.
     GF_API
-    GfHalf Normalize(GfHalf eps = GF_MIN_VECTOR_LENGTH);
+    GfHalf Normalize(GfHalf eps = float(GF_MIN_VECTOR_LENGTH));
 
     /// Return this quaternion's conjugate, which is the quaternion with the
     /// same real coefficient and negated imaginary coefficients.

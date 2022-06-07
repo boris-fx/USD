@@ -196,8 +196,8 @@ public:
 
     /// Multiplication by scalar.
     GfVec2f &operator*=(double s) {
-        _data[0] *= s;
-        _data[1] *= s;
+        _data[0] = float(_data[0] * s);
+        _data[1] = float(_data[1] * s);
         return *this;
     }
     GfVec2f operator*(double s) const {
@@ -295,8 +295,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 inline
 GfVec2f::GfVec2f(class GfVec2d const &other)
 {
-    _data[0] = other[0];
-    _data[1] = other[1];
+    _data[0] = float(other[0]);
+    _data[1] = float(other[1]);
 }
 inline
 GfVec2f::GfVec2f(class GfVec2h const &other)
@@ -307,8 +307,8 @@ GfVec2f::GfVec2f(class GfVec2h const &other)
 inline
 GfVec2f::GfVec2f(class GfVec2i const &other)
 {
-    _data[0] = other[0];
-    _data[1] = other[1];
+    _data[0] = float(other[0]);
+    _data[1] = float(other[1]);
 }
 
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.

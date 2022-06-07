@@ -185,8 +185,8 @@ public:
 
     /// Multiplication by scalar.
     GfVec2i &operator*=(double s) {
-        _data[0] *= s;
-        _data[1] *= s;
+       _data[0] = int(_data[0] * s);
+       _data[1] = int(_data[1] * s);
         return *this;
     }
     GfVec2i operator*(double s) const {

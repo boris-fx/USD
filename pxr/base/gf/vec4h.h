@@ -219,10 +219,10 @@ public:
 
     /// Multiplication by scalar.
     GfVec4h &operator*=(double s) {
-        _data[0] *= s;
-        _data[1] *= s;
-        _data[2] *= s;
-        _data[3] *= s;
+        _data[0] = float(_data[0] * s);
+        _data[1] = float(_data[1] * s);
+        _data[2] = float(_data[2] * s);
+        _data[3] = float(_data[3] * s);
         return *this;
     }
     GfVec4h operator*(double s) const {
@@ -285,7 +285,7 @@ public:
     /// \todo This was fixed for bug 67777. This is a gcc64 optimizer bug.
     /// By tickling the code, it no longer tries to write into
     /// an illegal memory address (in the code section of memory).
-    GfHalf Normalize(GfHalf eps = 0.001) {
+    GfHalf Normalize(GfHalf eps = 0.001f) {
         // TODO this seems suspect...  suggest dividing by length so long as
         // length is not zero.
         GfHalf length = GetLength();
@@ -293,7 +293,7 @@ public:
         return length;
     }
 
-    GfVec4h GetNormalized(GfHalf eps = 0.001) const {
+    GfVec4h GetNormalized(GfHalf eps = 0.001f) const {
         GfVec4h normalized(*this);
         normalized.Normalize(eps);
         return normalized;
@@ -320,10 +320,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 inline
 GfVec4h::GfVec4h(class GfVec4d const &other)
 {
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-    _data[3] = other[3];
+    _data[0] = float(other[0]);
+    _data[1] = float(other[1]);
+    _data[2] = float(other[2]);
+    _data[3] = float(other[3]);
 }
 inline
 GfVec4h::GfVec4h(class GfVec4f const &other)
@@ -336,10 +336,10 @@ GfVec4h::GfVec4h(class GfVec4f const &other)
 inline
 GfVec4h::GfVec4h(class GfVec4i const &other)
 {
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-    _data[3] = other[3];
+    _data[0] = float(other[0]);
+    _data[1] = float(other[1]);
+    _data[2] = float(other[2]);
+    _data[3] = float(other[3]);
 }
 
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.
@@ -382,7 +382,7 @@ GfGetLength(GfVec4h const &v)
 /// normalization. If the length of \c *v is smaller than \p eps then \c *v is
 /// set to \c *v/eps.  The original length of \c *v is returned.
 inline GfHalf
-GfNormalize(GfVec4h *v, GfHalf eps = 0.001)
+GfNormalize(GfVec4h *v, GfHalf eps = 0.001f)
 {
     return v->Normalize(eps);
 }
@@ -391,7 +391,7 @@ GfNormalize(GfVec4h *v, GfHalf eps = 0.001)
 /// If the length of this vector is smaller than \p eps, the vector divided by
 /// \p eps is returned.
 inline GfVec4h
-GfGetNormalized(GfVec4h const &v, GfHalf eps = 0.001)
+GfGetNormalized(GfVec4h const &v, GfHalf eps = 0.001f)
 {
     return v.GetNormalized(eps);
 }

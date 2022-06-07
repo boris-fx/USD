@@ -244,12 +244,12 @@ public:
     /// unary multiply.
     GfRange1f &operator *=(double m) {
         if (m > 0) {
-            _min *= m;
-            _max *= m;
+            _min = float(_min * m);
+            _max = float(_max * m);
         } else {
             float tmp = _min;
-            _min = _max * m;
-            _max = tmp * m;
+            _min = float(_max * m);
+            _max = float(tmp * m);
         }
         return *this;
     }
@@ -273,15 +273,15 @@ public:
     /// scalar multiply.
     friend GfRange1f operator *(double m, const GfRange1f &r) {
         return (m > 0 ? 
-            GfRange1f(r._min*m, r._max*m) : 
-            GfRange1f(r._max*m, r._min*m));
+            GfRange1f(float(r._min*m), float(r._max*m)) :
+            GfRange1f(float(r._max*m), float(r._min*m)) );
     }
 
     /// scalar multiply.
     friend GfRange1f operator *(const GfRange1f &r, double m) {
         return (m > 0 ? 
-            GfRange1f(r._min*m, r._max*m) : 
-            GfRange1f(r._max*m, r._min*m));
+            GfRange1f(float(r._min*m), float(r._max*m)) : 
+            GfRange1f(float(r._max*m), float(r._min*m)));
     }
 
     /// scalar divide.
