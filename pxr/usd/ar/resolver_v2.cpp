@@ -304,7 +304,8 @@ _GetAvailablePrimaryResolvers(
             break;
         }
     }
-    TF_VERIFY(availablePrimaryResolvers.back().type == defaultResolverType);
+    TF_VERIFY(!availablePrimaryResolvers.empty() &&
+              availablePrimaryResolvers.back().type == defaultResolverType);
 
     return availablePrimaryResolvers;
 }
@@ -516,77 +517,84 @@ public:
         // the chance to do additional manipulations.
         ArResolver* resolver = _GetURIResolver(assetPath);
         if (!resolver) {
-            resolver = &_GetResolver(anchorAssetPath);
+            resolver = _GetResolver(anchorAssetPath);
         }
 
-        // XXX: 
-        // If the anchorAssetPath is a package-relative path like
-        // /foo/bar.package[baz.file], we curently just use the outer package
-        // path as the anchoring asset. It might be more consistent if we
-        // used the inner *packaged* path as the anchor instead. Since the
-        // packaged path syntax is fully under Ar's control, we might not
-        // dispatch to any other resolver in this case and just anchor
-        // the packaged path and given assetPath ourselves.
-        const ArResolvedPath anchorResolvedPath(
-            ArSplitPackageRelativePathOuter(anchorAssetPath).first);
+        if (resolver) {
+            // XXX: 
+            // If the anchorAssetPath is a package-relative path like
+            // /foo/bar.package[baz.file], we curently just use the outer package
+            // path as the anchoring asset. It might be more consistent if we
+            // used the inner *packaged* path as the anchor instead. Since the
+            // packaged path syntax is fully under Ar's control, we might not
+            // dispatch to any other resolver in this case and just anchor
+            // the packaged path and given assetPath ourselves.
+            const ArResolvedPath anchorResolvedPath(
+                ArSplitPackageRelativePathOuter(anchorAssetPath).first);
 
-        if (ArIsPackageRelativePath(assetPath)) {
-            std::pair<std::string, std::string> packageAssetPath =
-                ArSplitPackageRelativePathOuter(assetPath);
-            packageAssetPath.first = createIdentifierFn(
-                *resolver, packageAssetPath.first, anchorResolvedPath);
+            if (ArIsPackageRelativePath(assetPath)) {
+                std::pair<std::string, std::string> packageAssetPath =
+                    ArSplitPackageRelativePathOuter(assetPath);
+                packageAssetPath.first = createIdentifierFn(
+                    *resolver, packageAssetPath.first, anchorResolvedPath);
 
-            return ArJoinPackageRelativePath(packageAssetPath);
+                return ArJoinPackageRelativePath(packageAssetPath);
+            }
+
+            return createIdentifierFn(*resolver, assetPath, anchorResolvedPath);
         }
-
-        return createIdentifierFn(*resolver, assetPath, anchorResolvedPath);
+        return {};
     }
 
     bool _IsContextDependentPath(
         const std::string& assetPath) const final
     {
         const _ResolverInfo* info = nullptr;
-        ArResolver& resolver = _GetResolver(assetPath, &info);
+        ArResolver * resolver = _GetResolver(assetPath, &info);
 
-        if (!info->implementsContexts) {
+        if (!resolver || !info->implementsContexts) {
             return false;
         }
 
         if (ArIsPackageRelativePath(assetPath)) {
-            return resolver.IsContextDependentPath(
+            return resolver->IsContextDependentPath(
                 ArSplitPackageRelativePathOuter(assetPath).first);
         }
-        return resolver.IsContextDependentPath(assetPath);
+        return resolver->IsContextDependentPath(assetPath);
     }
 
     bool _IsRepositoryPath(const std::string& path) const final
     {
-        ArResolver& resolver = _GetResolver(path);
-        if (ArIsPackageRelativePath(path)) {
-            return resolver.IsRepositoryPath(
-                ArSplitPackageRelativePathOuter(path).first);
+        if (ArResolver* resolver = _GetResolver(path)) {
+            if (ArIsPackageRelativePath(path)) {
+                return resolver->IsRepositoryPath(
+                    ArSplitPackageRelativePathOuter(path).first);
+            }
+            return resolver->IsRepositoryPath(path);
         }
-        return resolver.IsRepositoryPath(path);
+        return false;
     }
 
     std::string _GetExtension(const std::string& path) const final
     {
-        ArResolver& resolver = _GetResolver(path);
-        if (ArIsPackageRelativePath(path)) {
-            // We expect clients of this API will primarily care about the
-            // *packaged* asset, so we return the extension of the inner-most
-            // packaged path. Clients that care about the outer package's
-            // extension can split the package-relative path and call this
-            // function on the package path.
-            //
-            // XXX: This doesn't seem right. If Ar is defining the packaged
-            // path syntax, then Ar should be responsible for getting the
-            // extension for packaged paths instead of delegating.
-            const std::pair<std::string, std::string> packagePath =
-                ArSplitPackageRelativePathInner(path);
-            return resolver.GetExtension(packagePath.second);
+        if (ArResolver* resolver = _GetResolver(path)) {
+            if (ArIsPackageRelativePath(path)) {
+                // We expect clients of this API will primarily care about the
+                // *packaged* asset, so we return the extension of the inner-most
+                // packaged path. Clients that care about the outer package's
+                // extension can split the package-relative path and call this
+                // function on the package path.
+                //
+                // XXX: This doesn't seem right. If Ar is defining the packaged
+                // path syntax, then Ar should be responsible for getting the
+                // extension for packaged paths instead of delegating.
+                const std::pair<std::string, std::string> packagePath =
+                    ArSplitPackageRelativePathInner(path);
+                return resolver->GetExtension(packagePath.second);
+            }
+            return resolver->GetExtension(path);
         }
-        return resolver.GetExtension(path);
+        return {};
     }
 
     // The primary resolver and the URI resolvers all participate
@@ -783,20 +791,21 @@ public:
     {
         auto resolveFn = [this](const std::string& path) {
             const _ResolverInfo* info = nullptr;
-            ArResolver& resolver = _GetResolver(path, &info);
-
-            if (!info->implementsScopedCaches) {
-                if (_CachePtr currentCache = _threadCache.GetCurrentCache()) {
-                    _Cache::_PathToResolvedPathMap::accessor accessor;
-                    if (currentCache->_pathToResolvedPathMap.insert(
-                            accessor, std::make_pair(path, ArResolvedPath()))) {
-                        accessor->second = resolver.Resolve(path);
+            if (ArResolver* resolver = _GetResolver(path, &info)) {
+                if (!info->implementsScopedCaches) {
+                    if (_CachePtr currentCache = _threadCache.GetCurrentCache()) {
+                        _Cache::_PathToResolvedPathMap::accessor accessor;
+                        if (currentCache->_pathToResolvedPathMap.insert(
+                                accessor, std::make_pair(path, ArResolvedPath()))) {
+                            accessor->second = resolver->Resolve(path);
+                        }
+                        return accessor->second;
                     }
-                    return accessor->second;
                 }
-            }
 
-            return resolver.Resolve(path);
+                return resolver->Resolve(path);
+            }
+            return ArResolvedPath();
         };
 
         return _ResolveHelper(assetPath, resolveFn);
@@ -805,14 +814,16 @@ public:
     ArResolvedPath _ResolveForNewAsset(
         const std::string& assetPath) const final
     {
-        ArResolver& resolver = _GetResolver(assetPath);
-        if (ArIsPackageRelativePath(assetPath)) {
-            std::pair<std::string, std::string> packagePath =
-                ArSplitPackageRelativePathOuter(assetPath);
-            packagePath.first = resolver.ResolveForNewAsset(packagePath.first);
-            return ArResolvedPath(ArJoinPackageRelativePath(packagePath));
+        if (ArResolver* resolver = _GetResolver(assetPath)) {
+            if (ArIsPackageRelativePath(assetPath)) {
+                std::pair<std::string, std::string> packagePath =
+                    ArSplitPackageRelativePathOuter(assetPath);
+                packagePath.first = resolver->ResolveForNewAsset(packagePath.first);
+                return ArResolvedPath(ArJoinPackageRelativePath(packagePath));
+            }
+            return resolver->ResolveForNewAsset(assetPath);
         }
-        return resolver.ResolveForNewAsset(assetPath);
+        return {};
     };
 
     ArAssetInfo _GetAssetInfo(
@@ -821,87 +832,97 @@ public:
     {
         ArAssetInfo assetInfo;
 
-        ArResolver& resolver = _GetResolver(assetPath);
-        if (ArIsPackageRelativePath(assetPath)) {
-            std::pair<std::string, std::string> packageAssetPath =
-                ArSplitPackageRelativePathOuter(assetPath);
-            std::pair<std::string, std::string> packageResolvedPath =
-                ArSplitPackageRelativePathOuter(resolvedPath);                
+        if (ArResolver* resolver = _GetResolver(assetPath)) {
+           if (ArIsPackageRelativePath(assetPath)) {
+               std::pair<std::string, std::string> packageAssetPath =
+                   ArSplitPackageRelativePathOuter(assetPath);
+                   std::pair<std::string, std::string> packageResolvedPath =
+                   ArSplitPackageRelativePathOuter(resolvedPath);
 
-            assetInfo = resolver.GetAssetInfo(
-                packageAssetPath.first,
-                ArResolvedPath(packageResolvedPath.first));
+                   assetInfo = resolver->GetAssetInfo(
+                       packageAssetPath.first,
+                       ArResolvedPath(packageResolvedPath.first));
 
-            // If resolvedPath was a package-relative path, make sure the
-            // repoPath field is also a package-relative path, since the primary
-            // resolver would only have been given the outer package path.
-            if (!assetInfo.repoPath.empty()) {
-                assetInfo.repoPath = ArJoinPackageRelativePath(
-                    assetInfo.repoPath, packageResolvedPath.second);
-            }
+                   // If resolvedPath was a package-relative path, make sure the
+                   // repoPath field is also a package-relative path, since the primary
+                   // resolver would only have been given the outer package path.
+                   if (!assetInfo.repoPath.empty()) {
+                       assetInfo.repoPath = ArJoinPackageRelativePath(
+                           assetInfo.repoPath, packageResolvedPath.second);
+                   }
 
-            return assetInfo;
+               return assetInfo;
+           }
+           return resolver->GetAssetInfo(assetPath, resolvedPath);
         }
-        return resolver.GetAssetInfo(assetPath, resolvedPath);
+        return assetInfo;
     }
 
     ArTimestamp _GetModificationTimestamp(
         const std::string& path,
         const ArResolvedPath& resolvedPath) const final
     {
-        ArResolver& resolver = _GetResolver(path);
-        if (ArIsPackageRelativePath(path)) {
-            return resolver.GetModificationTimestamp(
-                ArSplitPackageRelativePathOuter(path).first,
-                ArResolvedPath(
-                    ArSplitPackageRelativePathOuter(resolvedPath).first));
+        if (ArResolver* resolver = _GetResolver(path)) {
+            if (ArIsPackageRelativePath(path)) {
+                return resolver->GetModificationTimestamp(
+                    ArSplitPackageRelativePathOuter(path).first,
+                    ArResolvedPath(
+                        ArSplitPackageRelativePathOuter(resolvedPath).first));
+            }
+            return resolver->GetModificationTimestamp(path, resolvedPath);
         }
-        return resolver.GetModificationTimestamp(path, resolvedPath);
+        return {};
     }
 
     std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath) const final
     { 
-        ArResolver& resolver = _GetResolver(resolvedPath);
-        if (ArIsPackageRelativePath(resolvedPath)) {
-            const std::pair<std::string, std::string> resolvedPackagePath =
-                ArSplitPackageRelativePathInner(resolvedPath);
+        if (ArResolver* resolver = _GetResolver(resolvedPath)) {
+            if (ArIsPackageRelativePath(resolvedPath)) {
+                const std::pair<std::string, std::string> resolvedPackagePath =
+                    ArSplitPackageRelativePathInner(resolvedPath);
 
-            ArPackageResolver* packageResolver = 
-                _GetPackageResolver(resolvedPackagePath.first);
-            if (packageResolver) {
-                return packageResolver->OpenAsset(
-                    resolvedPackagePath.first, resolvedPackagePath.second);
+                ArPackageResolver* packageResolver =
+                    _GetPackageResolver(resolvedPackagePath.first);
+                if (packageResolver) {
+                    return packageResolver->OpenAsset(
+                        resolvedPackagePath.first, resolvedPackagePath.second);
+                }
+                return nullptr;
             }
-            return nullptr;
+            return resolver->OpenAsset(resolvedPath);
         }
-        return resolver.OpenAsset(resolvedPath);
+        return {};
     }
 
     std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
         WriteMode mode) const final
     {
-        ArResolver& resolver = _GetResolver(resolvedPath);
-        if (ArIsPackageRelativePath(resolvedPath)) {
-            TF_CODING_ERROR("Cannot open package-relative paths for write");
-            return nullptr;
-        };
-        return resolver.OpenAssetForWrite(resolvedPath, mode);
+        if (ArResolver* resolver = _GetResolver(resolvedPath)) {
+            if (ArIsPackageRelativePath(resolvedPath)) {
+                TF_CODING_ERROR("Cannot open package-relative paths for write");
+                return nullptr;
+            };
+            return resolver->OpenAssetForWrite(resolvedPath, mode);
+        }
+        return {};
     }
 
     bool _CanWriteAssetToPath(
         const ArResolvedPath& resolvedPath,
         std::string* whyNot) const final
     {
-        ArResolver& resolver = _GetResolver(resolvedPath);
-        if (ArIsPackageRelativePath(resolvedPath)) {
-            if (whyNot) {
-                *whyNot = "Cannot open package-relative paths for write";
+        if (ArResolver* resolver = _GetResolver(resolvedPath)) {
+            if (ArIsPackageRelativePath(resolvedPath)) {
+                if (whyNot) {
+                    *whyNot = "Cannot open package-relative paths for write";
+                }
+                return false;
             }
-            return false;
+            return resolver->CanWriteAssetToPath(resolvedPath, whyNot);
         }
-        return resolver.CanWriteAssetToPath(resolvedPath, whyNot);
+        return false;
     }
 
     // The primary resolver and the package resolvers all participate in
@@ -1216,20 +1237,21 @@ private:
         }
     }
 
-    ArResolver&
+    ArResolver *
     _GetResolver(
         const std::string& assetPath,
         const _ResolverInfo** info = nullptr) const
     {
         ArResolver* uriResolver = _GetURIResolver(assetPath, info);
         if (uriResolver) {
-            return *uriResolver;
+            return uriResolver;
         }
         
-        if (info) {
+        if (info)
             *info = &_resolver->info;
-        }
-        return *(_resolver->Get());
+        if (_resolver)
+            return _resolver->Get();
+        return nullptr;
     }
 
     ArResolver*
