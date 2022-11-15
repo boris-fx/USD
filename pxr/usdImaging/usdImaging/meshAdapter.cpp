@@ -27,6 +27,7 @@
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
+#include "pxr/usdImaging/usdImaging/primvarUtils.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/mesh.h"
@@ -115,6 +116,11 @@ UsdImagingMeshAdapter::Populate(UsdPrim const& prim,
                 index->GetMaterialAdapter(materialPrim);
             if (materialAdapter) {
                 materialAdapter->Populate(materialPrim, index, nullptr);
+                // We need to register a dependency on the material prim so
+                // that geometry is updated when the material is
+                // (specifically, DirtyMaterialId).
+                // XXX: Eventually, it would be great to push this into hydra.
+                index->AddDependency(cachePath, materialPrim);
             }
         }
     }
@@ -285,7 +291,7 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
                 if (mesh.GetNormalsAttr().Get(&normals, time)) {
                     _MergePrimvar(&primvars,
                         UsdGeomTokens->normals,
-                        _UsdToHdInterpolation(mesh.GetNormalsInterpolation()),
+                        UsdImagingUsdToHdInterpolation(mesh.GetNormalsInterpolation()),
                         HdPrimvarRoleTokens->normal);
                 } else {
                     _RemovePrimvar(&primvars, UsdGeomTokens->normals);
@@ -339,7 +345,7 @@ UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
         UsdGeomPointBased pb(prim);
         return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
             prim, cachePath, propertyName, HdTokens->normals,
-            _UsdToHdInterpolation(pb.GetNormalsInterpolation()),
+            UsdImagingUsdToHdInterpolation(pb.GetNormalsInterpolation()),
             HdChangeTracker::DirtyNormals);
     }
     if (propertyName == UsdImagingTokens->primvarsNormals) {
@@ -352,7 +358,7 @@ UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
         UsdGeomMesh mesh(prim);
         return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
             prim, cachePath, propertyName, HdTokens->normals,
-            _UsdToHdInterpolation(mesh.GetNormalsInterpolation()),
+            UsdImagingUsdToHdInterpolation(mesh.GetNormalsInterpolation()),
             HdChangeTracker::DirtyNormals);
     }
     // Handle prefixed primvars that use special dirty bits.

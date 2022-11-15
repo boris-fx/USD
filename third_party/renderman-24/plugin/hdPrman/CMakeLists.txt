@@ -15,6 +15,7 @@ if(WIN32)
     set( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB:libmmd.lib /NODEFAULTLIB:libirc.lib /NODEFAULTLIB:svml_dispmd.lib /NODEFAULTLIB:libdecimal.lib" )
     list(APPEND optionalLibs ${PXRCORE_LIBRARY})
     list(APPEND optionalLibs ${PRMAN_LIBRARY})
+    list(APPEND optionalLibs ${PRMAN_STATS_LIBRARY})
 elseif(APPLE)
     set( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup -headerpad_max_install_names" )
 endif()
@@ -22,11 +23,23 @@ endif()
 set(optionalIncludeDirs "")
 set(optionalPublicClasses "")
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
-    list(APPEND optionalLibs ${MATERIALX_LIBRARIES} hdMtlx)
-    list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
+    list(APPEND optionalLibs
+        MaterialXCore
+        MaterialXFormat
+        MaterialXGenShader
+        MaterialXGenOsl
+        MaterialXRender
+        hdMtlx
+    )
     list(APPEND optionalPublicClasses matfiltMaterialX)
 
     if (${PXR_ENABLE_OSL_SUPPORT})
+        if (DEFINED OSL_SHADER_INSTALL_DIR)
+            add_compile_definitions(
+              OSL_SHADER_INSTALL_DIR=\"${OSL_SHADER_INSTALL_DIR}\"
+            )
+        endif()
+
         list(APPEND optionalLibs ${OSL_COMP_LIBRARY})
         list(APPEND optionalIncludeDirs ${OSL_INCLUDE_DIR})
     endif()
@@ -40,11 +53,13 @@ pxr_plugin(${PXR_PACKAGE}
     LIBRARIES
         ar
         arch
+        js
         plug
         tf
         vt
         gf
         hd
+        hdsi
         hio
         usdRi
         usdVol
@@ -58,8 +73,11 @@ pxr_plugin(${PXR_PACKAGE}
     PUBLIC_CLASSES
         basisCurves
         camera
+        cone
+        cylinder
         coordSys
         debugCodes
+        dependencyForwardingSceneIndexPlugin
         gprim
         gprimbase
         instancer
@@ -69,12 +87,17 @@ pxr_plugin(${PXR_PACKAGE}
         material
         matfiltConvertPreviewMaterial
         matfiltFilterChain
+        matfiltResolveTerminals
         matfiltResolveVstructs
         mesh
         paramsSetter
         points
         renderDelegate
+        renderSettings
         rixStrings
+        sampleFilter
+        sampleFilterInvalidatingSceneIndexPlugin
+        sphere
         volume
         xcpt
         ${optionalPublicClasses}
@@ -83,7 +106,9 @@ pxr_plugin(${PXR_PACKAGE}
         cameraContext
         renderPass
         framebuffer
+        implicitSurfaceSceneIndexPlugin
         matfiltSceneIndexPlugins
+        pinnedCurveExpandingSceneIndexPlugin
         renderBuffer
         renderParam
         renderViewContext
@@ -95,6 +120,7 @@ pxr_plugin(${PXR_PACKAGE}
         api.h
 
     PRIVATE_HEADERS
+        prmanArchDefs.h
         virtualStructConditionalGrammar.tab.h
 
     CPPFILES
