@@ -44,6 +44,7 @@ function(_copy_headers LIBRARY_NAME)
     if ("${CMAKE_CURRENT_SOURCE_DIR}" MATCHES ".*/pxr/.*")
         # Include paths under pxr/ match the source path.
         file(RELATIVE_PATH hpath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+        return() # don't copy, just include from the source dir
     endif()
     set(header_dest_dir "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include/${hpath}")
     if( NOT "${_args_FILES}" STREQUAL "")
@@ -1333,6 +1334,7 @@ function(_pxr_library NAME)
     target_include_directories(${NAME}
         PRIVATE
             "${CMAKE_BINARY_DIR}/include"
+            "${CMAKE_SOURCE_DIR}"
             "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
         INTERFACE
             $<INSTALL_INTERFACE:${headerInstallDir}>
