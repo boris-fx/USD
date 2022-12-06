@@ -76,6 +76,12 @@ if (PXR_ENABLE_NAMESPACES)
         set(PXR_INTERNAL_NAMESPACE "pxrInternal_v${PXR_MAJOR_VERSION}_${PXR_MINOR_VERSION}")
     endif()
 
+    if (PXR_ENABLE_RESERVED_NAMESPACE)
+        set(PXR_USE_RESERVED_NAMESPACE "1")
+    else()
+        set(PXR_USE_RESERVED_NAMESPACE "0")
+    endif()
+
     message(STATUS "C++ namespace configured to (external) ${PXR_EXTERNAL_NAMESPACE}, (internal) ${PXR_INTERNAL_NAMESPACE}")
 else()
     set(PXR_USE_NAMESPACES "0")
