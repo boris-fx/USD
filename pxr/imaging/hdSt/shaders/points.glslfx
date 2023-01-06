@@ -70,10 +70,13 @@ void main(void)
     float width = length(w.xyz);
 
     // compute screenspace width
-    vec4 diameter = vec4(GetProjectionMatrix() * vec4(width, 0, outData.Peye.z, 1));
+    // calculate delta X given the point's eye z and use to scale the width
+    MAT4 projectMatrix = GetProjectionMatrix();
+    float deltaX = projectMatrix[0][0]/(outData.Peye.z*projectMatrix[2][3]);
+    float diameter = abs(width*deltaX);
     vec2 viewportScale = GetViewport().zw * 0.5;
 
-    gl_PointSize = clamp(viewportScale.x * diameter.x/diameter.w,
+    gl_PointSize = clamp(viewportScale.x * diameter,
                          HD_GL_POINT_SIZE_MIN, HD_GL_POINT_SIZE_MAX);
 
     ProcessPointId(GetPointId());
