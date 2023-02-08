@@ -56,7 +56,8 @@ void main(void)
 
     ProcessPrimvarsIn();
 
-    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    MAT4 projectMatrix = GetProjectionMatrix();
+    gl_Position = vec4(projectMatrix * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
     // check for primvar 'widths'
@@ -71,8 +72,8 @@ void main(void)
 
     // compute screenspace width
     // calculate delta X given the point's eye z and use to scale the width
-    MAT4 projectMatrix = GetProjectionMatrix();
-    float deltaX = projectMatrix[0][0]/(outData.Peye.z*projectMatrix[2][3]);
+    float deltaX = projectMatrix[0][0]/
+                  (outData.Peye.z*projectMatrix[2][3] + projectMatrix[3][3]);
     float diameter = abs(width*deltaX);
     vec2 viewportScale = GetViewport().zw * 0.5;
 
