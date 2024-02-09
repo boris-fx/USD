@@ -281,8 +281,11 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 
     // If wireColor is unset (zero), ignore it altogether
     
-    Cfill.rgb = mix(Cfill.rgb, wireColor.rgb, wireColor.a);
-    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
+    // This has been changed to facilitate using the wireColor alpha
+    // as an opacity to display faded 3D models in Mocha
+    // See MO-12436: Users would like imported models to be slightly faded or transparent
+    Cfill.rgb = mix(Cfill.rgb, wireColor.rgb, 1.0);
+    Cfill.a = wireColor.a; // Use wireframe opacity.
 
     return Cfill;
 }
