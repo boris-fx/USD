@@ -20,6 +20,7 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -83,7 +84,7 @@ public:
     bool enableSceneLights;
     // Respect USD's model:drawMode attribute...
     bool enableUsdDrawModes;
-    GfVec4f clearColor;
+    VtValue clearColor;
     TfToken colorCorrectionMode;
     // Optional OCIO color setings, only valid when colorCorrectionMode==HdxColorCorrectionTokens->openColorIO
     int lut3dSizeOCIO;
@@ -129,7 +130,7 @@ UsdImagingGLRenderParams::UsdImagingGLRenderParams() :
     enableSceneMaterials(true),
     enableSceneLights(true),
     enableUsdDrawModes(true),
-    clearColor(0,0,0,1),
+    clearColor(GfVec4f(0,0,0,1)),
     lut3dSizeOCIO(65),
     bboxLineColor(1),
     bboxLineDashSize(3)

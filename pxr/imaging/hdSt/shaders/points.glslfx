@@ -90,7 +90,7 @@ float ComputeRasterPointSize(
     const float viewportSizeX = GetViewport().z;
     const float NDCToImageScale = viewportSizeX * 0.5;
 
-    return modelWidth * modelToEyeScale * eyeToNDCScale * NDCToImageScale;
+    return abs(modelWidth * modelToEyeScale * eyeToNDCScale) * NDCToImageScale;
 }
 
 void main(void)
