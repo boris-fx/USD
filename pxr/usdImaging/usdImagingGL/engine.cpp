@@ -503,7 +503,7 @@ UsdImagingGLEngine::RenderBatch(
         HdAovDescriptor colorAovDesc = 
             _taskControllerSceneIndex->GetRenderOutputSettings(HdAovTokens->color);
         if (colorAovDesc.format != HdFormatInvalid) {
-            colorAovDesc.clearValue = VtValue(params.clearColor);
+            colorAovDesc.clearValue = params.clearColor;
             _taskControllerSceneIndex->SetRenderOutputSettings(
                 HdAovTokens->color, colorAovDesc);
         }
@@ -513,7 +513,7 @@ UsdImagingGLEngine::RenderBatch(
         HdAovDescriptor colorAovDesc = 
             _taskController->GetRenderOutputSettings(HdAovTokens->color);
         if (colorAovDesc.format != HdFormatInvalid) {
-            colorAovDesc.clearValue = VtValue(params.clearColor);
+            colorAovDesc.clearValue = params.clearColor;
             _taskController->SetRenderOutputSettings(
                 HdAovTokens->color, colorAovDesc);
         }
