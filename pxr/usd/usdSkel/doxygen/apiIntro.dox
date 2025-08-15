@@ -231,13 +231,14 @@ UsdSkelCache skelCache;
 
 // Traverse through the prims on the stage to find where we might
 // have prims to skin.
-auto it = stage->Traverse();
-for (const UsdPrim& prim : it) {
+auto range = stage->Traverse();
+for (auto it = range.begin(); it != range.end(); ++it) {
+    auto& prim(*it);
     if (prim.IsA<UsdSkelRoot>()) {
-        it.PruneChilren();
+        it.PruneChildren();
 
         UsdSkelRoot skelRoot(prim);
-        skelCache.Populate(skelRoot, UsdTraverseInstanceProxies()));
+        skelCache.Populate(skelRoot, UsdTraverseInstanceProxies());
 
         std::vector<UsdSkelBinding> bindings;
         skelCache.ComputeSkelBindings(skelRoot, &bindings,
@@ -246,7 +247,7 @@ for (const UsdPrim& prim : it) {
         // Iterate over the bindings related to this SkelRoot
         for (const UsdSkelBinding& binding : bindings) {
             // Get the Skeleton for this binding.
-            UsdSkelQuery skelQuery =
+            UsdSkelSkeletonQuery skelQuery =
                 skelCache.GetSkelQuery(binding.GetSkeleton());
 
             VtMatrix4dArray skinningXforms;
@@ -255,12 +256,12 @@ for (const UsdPrim& prim : it) {
                 // Iterate over the prims that are skinned by this Skeleton.
                 for (const UsdSkelSkinningQuery& skinningQuery :
                      binding.GetSkinningTargets()) {
-                     
-                   const UsdPrim& primToSkin = skinningQuery.GetPrim();
-                   // Process prim / apply skinning
+
+                    const UsdPrim& primToSkin = skinningQuery.GetPrim();
+                    // Process prim / apply skinning
                 }
             }
-       }
+        }
     }
 }
 \endcode
