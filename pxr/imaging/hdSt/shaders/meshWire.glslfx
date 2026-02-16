@@ -273,6 +273,13 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
         discard;
     }
 
+    // Use the wireframe colour. This is changed from the upstream USD
+    // behaviour for mocha where we want to render the file assets as
+    // wireframes with the colour we specify. This prevents any applied
+    // material colour from affecting the resulting colour and also gives us
+    // the opacity we want.
+    Cfill = GetWireframeColor();
+
     return ApplyFinalEdgeOpacity(Cfill, p);
 }
 
